@@ -41,7 +41,10 @@ function initGame() {
 	    max_height: 300,
 	    min_height: 50,
 	    divisor: 250,
-	    falloff: 0.2
+	    falloff: 0.2,
+	    min_segment_len: 50,
+	    max_segment_len: 500,
+	    max_inclination: 0.4
 	},
 	points: 0
     };
@@ -92,10 +95,13 @@ function move() {
 
     game.cave.divisor += game.cave.falloff;
     game.cave.height = game.cave.min_height + (game.cave.max_height - game.cave.min_height) * (game.cave.max_height - game.cave.min_height) / game.cave.divisor;
-    if (ceil[ceil.length-1][0] < canvas.width) {
+    var minlen = game.cave.min_segment_len;
+    var maxlen = game.cave.max_segment_len;
+    while (ceil[ceil.length-1][0] < canvas.width) {
 	var center = (canvas.height / 2) + (Math.random() - 0.5) * (canvas.height - game.cave.height);
-	ceil.push([1000, center - game.cave.height / 2]);
-	floor.push([1000, center + game.cave.height / 2]);
+	var nextXpos = ceil[ceil.length - 1][0] + minlen + Math.random() * (maxlen - minlen);
+	ceil.push([nextXpos, center - game.cave.height / 2]);
+	floor.push([nextXpos, center + game.cave.height / 2]);
     }
 
     if (ceil[0][0] < 0 && ceil[1][0] < 0) {
