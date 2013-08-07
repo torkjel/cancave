@@ -27,12 +27,13 @@ function initGame() {
 	ship : {
 	    hspeed: 10,
 	    yspeed: 50,
-	    xspeed : 3,
+	    xspeed : 5,
 	    size: 10,
 	    thrust: 1.4,
-	    xpos: 100,
+	    xpos: 200,
 	    ypos: 250,
-	    throtle: false
+	    throtle: false,
+	    tail: []
 	},
 	gravity : -1.4,
 	cave : {
@@ -44,7 +45,7 @@ function initGame() {
 	    falloff: 0.2,
 	    min_segment_len: 50,
 	    max_segment_len: 500,
-	    max_inclination: 0.4
+	    max_inclination: 0.7
 	},
 	points: 0
     };
@@ -73,17 +74,13 @@ function time() {
 
 function move() {
     var ship = game.ship;
+
+    // Update ship vertival position and speed
+    ship.tail.push([ship.xpos, ship.ypos]);
     ship.ypos -= (ship.yspeed / 10);
-    if (ship.ypos <= 0) {
-	ship.ypos = 0;
-	ship.yspeed = 0;
-    } else if (ship.ypos >= canvas.height) {
-	ship.ypos = canvas.height;
-	ship.yspeed = 0;
-    }
     ship.yspeed += ship.throtle ? ship.thrust : game.gravity;
 
-
+    // Move cave
     var ceil = game.cave.ceiling;
     for (var i = 0; i < ceil.length; i++) {
 	ceil[i][0] -= ship.xspeed;
@@ -92,18 +89,39 @@ function move() {
     for (var i = 0; i < floor.length; i++) {
 	floor[i][0] -= ship.xspeed;
     }
+    for (var i = 0; i < ship.tail.length; i++) {
+	ship.tail[i][0] -= ship.xspeed;
+    }
+    while (ship.tail[0][0] < 0) {
+	ship.tail.shift();
+    }
 
+    // Generate next cave segment
     game.cave.divisor += game.cave.falloff;
     game.cave.height = game.cave.min_height + (game.cave.max_height - game.cave.min_height) * (game.cave.max_height - game.cave.min_height) / game.cave.divisor;
     var minlen = game.cave.min_segment_len;
     var maxlen = game.cave.max_segment_len;
     while (ceil[ceil.length-1][0] < canvas.width) {
-	var center = (canvas.height / 2) + (Math.random() - 0.5) * (canvas.height - game.cave.height);
-	var nextXpos = ceil[ceil.length - 1][0] + minlen + Math.random() * (maxlen - minlen);
-	ceil.push([nextXpos, center - game.cave.height / 2]);
-	floor.push([nextXpos, center + game.cave.height / 2]);
+	var prevCenter = ceil[ceil.length - 1][1] + (floor[ceil.length - 1][1] - ceil[ceil.length - 1][1]) / 2;
+	var prevX = ceil[ceil.length - 1][0];
+	var nextX = ceil[ceil.length - 1][0] + minlen + Math.random() * (maxlen - minlen);
+	var nextCenter = (Math.random() - 0.5) * 2 * canvas.height + (canvas.height / 2);
+	var inclination = (nextCenter - prevCenter) / (nextX - prevX);
+	if (Math.abs(inclination) > game.cave.max_inclination) {
+	    nextCenter = prevCenter + (nextX - prevX) * game.cave.max_inclination * (inclination > 0 ? 1 : -1);
+	}
+	if ((nextCenter + game.cave.height / 2) > canvas.height) {
+	    nextCenter = canvas.height - game.cave.height/2;
+	}
+	if ((nextCenter - game.cave.height / 2) < 0) {
+	    nextCenter = game.cave.height/2
+	}
+
+	ceil.push([nextX, nextCenter - game.cave.height / 2]);
+	floor.push([nextX, nextCenter + game.cave.height / 2]);
     }
 
+    // Delete old cave segment
     if (ceil[0][0] < 0 && ceil[1][0] < 0) {
 	ceil.shift();
 	floor.shift();
@@ -113,7 +131,7 @@ function move() {
 function crashed() {
     var ship = game.ship;
     return clearing(ship.xpos, ship.ypos, game.cave.ceiling) < 0
-	|| clearing(ship.xpos, ship.ypos, game.cave.floor) > -ship.size;
+	|| clearing(ship.xpos, ship.ypos, game.cave.floor) > 0;
 }
 
 function clearing(xpos, ypos, curve) {
@@ -135,7 +153,18 @@ function animate() {
 
     var ship = game.ship;
     context.fillStyle="#FF0000";
-    context.fillRect(ship.xpos, ship.ypos, ship.size, ship.size);
+    context.beginPath();
+    context.moveTo(ship.xpos, ship.ypos - ship.size/2);
+    context.lineTo(ship.xpos, ship.ypos + ship.size/2);
+    for (var i = ship.tail.length - 1; i >= 0 ; i--) {
+	context.lineTo(ship.tail[i][0], ship.tail[i][1] + ship.size/2);
+    }
+    for (var i = 0; i < ship.tail.length; i++) {
+	context.lineTo(ship.tail[i][0], ship.tail[i][1] - ship.size/2);
+    }
+    context.closePath();
+    context.fill();
+
 
     var cave = game.cave;
     var ceil = cave.ceiling;
