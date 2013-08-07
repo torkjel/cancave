@@ -38,8 +38,10 @@ function initGame() {
 	cave : {
 	    ceiling : [[0, 50], [300, 50], [600, 50],  [800, 50]],
 	    floor : [[0, 350], [300, 350], [600, 350], [800, 350]],
-	    height: 300,
-	    falloff: 0.1
+	    max_height: 300,
+	    min_height: 50,
+	    divisor: 250,
+	    falloff: 0.2
 	},
 	points: 0
     };
@@ -63,6 +65,7 @@ function time() {
     context.fillText("Pos: " + game.ship.ypos, 10, 50);
     context.fillText("Segments: " + game.cave.ceiling.length, 10, 60);
     context.fillText("Points: " + game.points, 10, canvas.height - 20);
+    context.fillText("Height: " + game.cave.height, 10, 70);
 }
 
 function move() {
@@ -87,7 +90,8 @@ function move() {
 	floor[i][0] -= ship.xspeed;
     }
 
-    game.cave.height -= game.cave.falloff;
+    game.cave.divisor += game.cave.falloff;
+    game.cave.height = game.cave.min_height + (game.cave.max_height - game.cave.min_height) * (game.cave.max_height - game.cave.min_height) / game.cave.divisor;
     if (ceil[ceil.length-1][0] < canvas.width) {
 	var center = (canvas.height / 2) + (Math.random() - 0.5) * (canvas.height - game.cave.height);
 	ceil.push([1000, center - game.cave.height / 2]);
@@ -101,7 +105,22 @@ function move() {
 }
 
 function crashed() {
-    return game.ship.ypos == 0 || game.ship.ypos == canvas.height;
+    var ship = game.ship;
+    return clearing(ship.xpos, ship.ypos, game.cave.ceiling) < 0
+	|| clearing(ship.xpos, ship.ypos, game.cave.floor) > -ship.size;
+}
+
+function clearing(xpos, ypos, curve) {
+    for (var i = 0; i < curve.length - 1; i++) {
+	 if (curve[i][0] <= xpos && curve[i+1][0] >= xpos) {
+	     var hgt = curve[i+1][1] - curve[i][1];
+	     var wdt = curve[i+1][0] - curve[i][0];
+	     var dy = hgt / wdt;
+	     var y = curve[i][1] + dy * (xpos - curve[i][0]);
+	     return ypos - y;
+	 }
+    }
+    throw new Exception("Bad curve");
 }
 
 function animate() {
