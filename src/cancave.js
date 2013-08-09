@@ -147,10 +147,7 @@ function clearing(xpos, ypos, curve) {
     throw new Exception("Bad curve");
 }
 
-function animate() {
-    context.fillStyle="#000000";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-
+function drawShip() {
     var ship = game.ship;
     context.fillStyle="#FF0000";
     context.beginPath();
@@ -164,32 +161,33 @@ function animate() {
     }
     context.closePath();
     context.fill();
+}
 
-
+function drawCave() {
     var cave = game.cave;
-    var ceil = cave.ceiling;
-    context.fillStyle="#0000FF";
-    context.beginPath();
-    context.moveTo(0,0);
-    context.lineTo(ceil[0][0], ceil[0][1]);
-    for (var i = 1; i < ceil.length; i++) {
-	context.lineTo(ceil[i][0], ceil[i][1]);
-    }
-    context.lineTo(canvas.width, 0);
-    context.closePath();
-    context.fill();
+    drawTerrain([0,0], [canvas.width, 0], cave.ceiling);
+    drawTerrain([0,canvas.height], [canvas.width, canvas.height], cave.floor);
+}
 
-    var floor = cave.floor;
+function drawTerrain(start, end, path) {
     context.fillStyle="#0000AA";
     context.beginPath();
-    context.moveTo(0,canvas.height);
-    context.lineTo(floor[0][0], floor[0][1]);
-    for (var i = 1; i < floor.length; i++) {
-	context.lineTo(floor[i][0], floor[i][1]);
+    context.moveTo(start[0],start[1]);
+    context.lineTo(path[0][0], path[0][1]);
+    for (var i = 1; i < path.length; i++) {
+	context.lineTo(path[i][0], path[i][1]);
     }
-    context.lineTo(canvas.width, canvas.height);
+    context.lineTo(end[0], end[1]);
     context.closePath();
     context.fill();
+}
+
+function animate() {
+    context.fillStyle="#000000";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawCave();
+    drawShip();
 
     time();
 
