@@ -25,17 +25,16 @@ function initGame() {
     return {
 	mode : "welcome",
 	ship : {
-	    hspeed: 10,
-	    yspeed: 50,
-	    xspeed : 5,
+	    yspeed: 5,
+	    xspeed : 0.3,
 	    size: 10,
-	    thrust: 1.4,
+	    thrust: 0.01,
 	    xpos: 200,
 	    ypos: 250,
 	    throtle: false,
-	    tail: []
+	    tail: [[0, 250]]
 	},
-	gravity : -1.4,
+	gravity : -0.01,
 	cave : {
 	    ceiling : [[0, 50], [300, 50], [600, 50],  [800, 50]],
 	    floor : [[0, 350], [300, 350], [600, 350], [800, 350]],
@@ -47,53 +46,41 @@ function initGame() {
 	    max_segment_len: 500,
 	    max_inclination: 0.7
 	},
-	points: 0
+	points: 0,
+	start_time: 0,
+	time: 0,
+	avgTpf: 0,
+	tpf: []
     };
 }
 
-function time() {
-    var next = new Date();
-    if (now.getSeconds() != next.getSeconds()) {
-	fps = frameCount;
-	frameCount = 0;
-	now = next;
-    } else
-	frameCount++;
-
-    game.points++;
-
-    context.fillStyle="#FFFFFF";
-    context.fillText("FPS: " + fps, 10, 20);
-    context.fillText("Throtle: " + game.ship.throtle, 10, 30);
-    context.fillText("Speed: " + game.ship.yspeed, 10, 40);
-    context.fillText("Pos: " + game.ship.ypos, 10, 50);
-    context.fillText("Segments: " + game.cave.ceiling.length, 10, 60);
-    context.fillText("Points: " + game.points, 10, canvas.height - 20);
-    context.fillText("Height: " + game.cave.height, 10, 70);
-}
-
-function move() {
+function moveShip(distance) {
     var ship = game.ship;
 
-    // Update ship vertival position and speed
+    // update tail
     ship.tail.push([ship.xpos, ship.ypos]);
-    ship.ypos -= (ship.yspeed / 10);
-    ship.yspeed += ship.throtle ? ship.thrust : game.gravity;
+    for (var i = 0; i < ship.tail.length; i++) {
+	ship.tail[i][0] -= distance;
+    }
+    while (ship.tail.length > 1 && ship.tail[1][0] < 0) {
+	ship.tail.shift();
+    }
 
+    // Update ship vertical position and speed
+    ship.yspeed += (ship.throtle ? ship.thrust : game.gravity) * game.avgTpf;
+    ship.ypos -= ship.yspeed;
+}
+
+function moveCave(distance) {
     // Move cave
+    var ship = game.ship;
     var ceil = game.cave.ceiling;
     for (var i = 0; i < ceil.length; i++) {
-	ceil[i][0] -= ship.xspeed;
+	ceil[i][0] -= distance;
     }
     var floor = game.cave.floor;
     for (var i = 0; i < floor.length; i++) {
-	floor[i][0] -= ship.xspeed;
-    }
-    for (var i = 0; i < ship.tail.length; i++) {
-	ship.tail[i][0] -= ship.xspeed;
-    }
-    while (ship.tail[0][0] < 0) {
-	ship.tail.shift();
+	floor[i][0] -= distance;
     }
 
     // Generate next cave segment
@@ -101,7 +88,7 @@ function move() {
     game.cave.height = game.cave.min_height + (game.cave.max_height - game.cave.min_height) * (game.cave.max_height - game.cave.min_height) / game.cave.divisor;
     var minlen = game.cave.min_segment_len;
     var maxlen = game.cave.max_segment_len;
-    while (ceil[ceil.length-1][0] < canvas.width) {
+    if (ceil[ceil.length-1][0] < canvas.width) {
 	var prevCenter = ceil[ceil.length - 1][1] + (floor[ceil.length - 1][1] - ceil[ceil.length - 1][1]) / 2;
 	var prevX = ceil[ceil.length - 1][0];
 	var nextX = ceil[ceil.length - 1][0] + minlen + Math.random() * (maxlen - minlen);
@@ -126,6 +113,12 @@ function move() {
 	ceil.shift();
 	floor.shift();
     }
+}
+
+function move() {
+    var distance = game.avgTpf * game.ship.xspeed;;
+    moveShip(distance);
+    moveCave(distance);
 }
 
 function crashed() {
@@ -182,19 +175,59 @@ function drawTerrain(start, end, path) {
     context.fill();
 }
 
+function drawStatus() {
+    context.fillStyle="#FFFFFF";
+    context.fillText("FPS: " + fps, 10, 20);
+    context.fillText("Throtle: " + game.ship.throtle, 10, 30);
+    context.fillText("Speed: " + game.ship.yspeed, 10, 40);
+    context.fillText("Pos: " + game.ship.ypos, 10, 50);
+    context.fillText("Segments: " + game.cave.ceiling.length, 10, 60);
+    context.fillText("Points: " + game.points, 10, canvas.height - 20);
+    context.fillText("Height: " + game.cave.height, 10, 70);
+}
+
+function tick() {
+    var next = new Date();
+    if (now.getSeconds() != next.getSeconds()) {
+	fps = frameCount;
+	frameCount = 0;
+	now = next;
+    } else
+	frameCount++;
+
+    var time = game.start_time - next.getTime();
+    game.tpf.push(game.time - time);
+    while (game.tpf.length > 30)
+	game.tpf.shift();
+    var sum = 0;
+    for (var i = 0; i < game.tpf.length; i++)
+	sum += game.tpf[i];
+    game.avgTpf = sum / game.tpf.length;
+    game.time = time;
+    game.points = time;
+}
+
+function start() {
+    game.mode = "play";
+    game.start_time = new Date().getTime();
+    animate();
+}
+
 function animate() {
     context.fillStyle="#000000";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
+    if (game.mode == "play") {
+	tick();
+	move();
+    }
+
     drawCave();
     drawShip();
-
-    time();
+    drawStatus();
 
     if (crashed())
 	game.mode = "dead";
-
-    move();
 
     if (game.mode == "play") {
 	requestAnimFrame(function() {
@@ -222,12 +255,10 @@ function keyDown(event) {
 	game.ship.throtle = true;
     if (event.keyCode == ENTER) {
 	if (game.mode == "welcome") {
-	    game.mode = "play";
-	    animate();
+	    start();
 	} else if (game.mode == "dead") {
 	    game = initGame();
-	    game.mode = "play";
-	    animate();
+	    start();
 	}
     }
 }
