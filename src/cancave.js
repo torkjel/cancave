@@ -9,8 +9,8 @@ window.requestAnimFrame = (function(callback) {
         };
 })();
 
-const SPACE = 32;
-const ENTER = 13;
+var SPACE = 32;
+var ENTER = 13;
 
 var canvas = null;
 var context = null;
