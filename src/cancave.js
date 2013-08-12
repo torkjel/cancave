@@ -23,6 +23,7 @@ var game = initGame();
 
 function initGame() {
     return {
+	title : "CanCave  -  https://github.com/torkjel/cancave  -  Feel free to fork!",
 	mode : "welcome",
 	ship : {
 	    yspeed: 5,
@@ -175,15 +176,21 @@ function drawTerrain(start, end, path) {
     context.fill();
 }
 
+function fillDigits(value, digits, fill) {
+    var str = "" + value;
+    while (str.length < digits)
+	str = fill + str;
+    return str;
+}
+
 function drawStatus() {
+    context.fillStyle = 'rgba(64, 64, 64, 0.5)';
+    context.fillRect(0, canvas.height - 20, canvas.width, 20);
+    context.fillRect(0, 0, canvas.width, 20);
+    context.font = "normal 10pt monospace";
     context.fillStyle="#FFFFFF";
-    context.fillText("FPS: " + fps, 10, 20);
-    context.fillText("Throtle: " + game.ship.throtle, 10, 30);
-    context.fillText("Speed: " + game.ship.yspeed, 10, 40);
-    context.fillText("Pos: " + game.ship.ypos, 10, 50);
-    context.fillText("Segments: " + game.cave.ceiling.length, 10, 60);
-    context.fillText("Points: " + game.points, 10, canvas.height - 20);
-    context.fillText("Height: " + game.cave.height, 10, 70);
+    context.fillText(game.title, 20, 15);
+    context.fillText('Points: ' + fillDigits(game.points, 7, 0) + '  -  FPS: ' + fillDigits(fps), 20, canvas.height - 5);
 }
 
 function tick() {
@@ -195,8 +202,8 @@ function tick() {
     } else
 	frameCount++;
 
-    var time = game.start_time - next.getTime();
-    game.tpf.push(game.time - time);
+    var time = next.getTime() - game.start_time;
+    game.tpf.push(time - game.time);
     while (game.tpf.length > 30)
 	game.tpf.shift();
     var sum = 0;
@@ -234,14 +241,36 @@ function animate() {
             animate();
 	});
     } else if (game.mode == "welcome") {
-	context.fillStyle="#FFFFFF";
-	context.fillText("Welcome to the CanCave", 120, 200);
-	context.fillText("Press <enter> to start", 120, 220);
+	drawInfo(["Welcome to the CanCave"], ["Press <enter> to start", "Press <space> to gain height"]);
     } else if (game.mode == "dead") {
-	context.fillStyle="#FFFFFF";
-	context.fillText("You died!", 120, 200);
-	context.fillText("Press <enter> to restart", 120, 220);
+	drawInfo(["Cavestronaut died!"], ["Press <enter> to play again"]);
     }
+}
+
+function drawInfo(text, info) {
+    context.fillStyle = 'rgba(64, 0, 64, 0.5)';
+    var wdt = canvas.width - canvas.width * 0.3;
+    var hmargin = (canvas.width - wdt) / 2;
+    var hgt = canvas.height - canvas.height * 0.3;
+    var vmargin = (canvas.height - hgt) / 2;
+    context.fillRect(hmargin, vmargin, wdt, hgt);
+    context.font = "normal 20pt monospace";
+    context.textAlign = "center";
+    context.fillStyle="#FFFFFF";
+    var vstart = canvas.height / 2;
+    vstart -= text.length * 25 / 2;
+    for (var i = 0; i < text.length; i++) {
+	context.fillText(text[i], canvas.width / 2, vstart);
+	vstart += 25;
+    }
+    vstart += 20;
+    context.font = "normal 14pt monospace";
+    for (var i = 0; i < info.length; i++) {
+	context.fillText(info[i], canvas.width / 2, vstart);
+	vstart += 17;
+    }
+
+    context.textAlign = "left";
 }
 
 window.onload=function() {
