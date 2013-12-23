@@ -23,6 +23,9 @@ var isTouch = null;
 
 var game = initGame();
 
+var hiscores = new ScoreTable();
+var crashedDate = null;
+
 function initGame() {
     isTouch = null;
     return {
@@ -236,18 +239,52 @@ function animate() {
     drawShip();
     drawStatus();
 
-    if (crashed())
+    if (crashed()) {
 	game.mode = "dead";
+	var now = crashedDate = new Date();
+	hiscores.addScore(new Score("player", (1900 + now.getYear()) + "-" + (now.getMonth() + 1) + "-" + now.getDate(), game.points));
+    }
 
     if (game.mode == "play") {
 	requestAnimFrame(function() {
             animate();
 	});
     } else if (game.mode == "welcome") {
-	drawInfo(["Welcome to the CanCave"], ["Press space, click or touch to play"]);
+	var info = createHiscoreTable();
+	info.splice(0, 0, "Press space, click or touch to play", "", "", "High score");
+	drawInfo(["Welcome to the CanCave"], info);
     } else if (game.mode == "dead") {
-	drawInfo(["Cavestronaut died!"], ["Press space, click or touch to play again"]);
+	var info = createHiscoreTable();
+	info.splice(0, 0, "Press space, click or touch to play again", "", "", "High score");
+	drawInfo(["Cavestronaut died!"], info);
     }
+}
+
+function createHiscoreTable() {
+    var table = [];
+    for (var i = 0; i < 5; i++) {
+	if (i < hiscores.scores.length) {
+	    var score = hiscores.scores[i];
+	    table.push( (i+1) + ": " + padRight(10, ".", score.name) + " " + padLeft(10, ".", score.date) + " " + padLeft(8, ".", score.score));
+	} else {
+	    table.push( (i+1) + ": " + ".......... .......... ........");
+	}
+    }
+    return table;
+}
+
+function padLeft(len, padding, value) {
+    value = "" + value;
+    while (value.length < len)
+	value = padding + value;
+    return value;
+}
+
+function padRight(len, padding, value) {
+    value = "" + value;
+    while (value.length < len)
+	value = value + padding ;
+    return value;
 }
 
 function drawInfo(text, info) {
@@ -260,7 +297,7 @@ function drawInfo(text, info) {
     context.font = "normal 20pt monospace";
     context.textAlign = "center";
     context.fillStyle="#FFFFFF";
-    var vstart = canvas.height / 2;
+    var vstart = canvas.height / 3;
     vstart -= text.length * 25 / 2;
     for (var i = 0; i < text.length; i++) {
 	context.fillText(text[i], canvas.width / 2, vstart);
@@ -286,27 +323,28 @@ function touchStart(event) {
     if (isTouch === null)
 	isTouch = true;
     if (isTouch === true)
-	handleGameEvent();
+	handleTrigger();
 }
 
 function mouseDown(event) {
     if (isTouch === null)
 	isTouch = false;
     if (isTouch === false)
-	handleGameEvent();
+	handleTrigger();
 }
 
 function keyDown(event) {
     if (event.keyCode == SPACE)
-	handleGameEvent();
+	handleTrigger();
 }
 
-function handleGameEvent() {
+function handleTrigger() {
     if (game.mode == 'play')
 	game.ship.throtle = true;
     else if (game.mode == "welcome")
 	start();
-    else if (game.mode == "dead") {
+    // wait 1 sec before restarting game, to avoid restarting by accident.
+    else if (game.mode == "dead" && (new Date().getTime() > crashedDate.getTime() + 1000)) {
 	game = initGame();
 	start();
     }
