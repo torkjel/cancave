@@ -11,7 +11,6 @@ window.requestAnimFrame = (function(callback) {
 })();
 
 var SPACE = 32;
-var ENTER = 13;
 
 var canvas = null;
 var context = null;
@@ -245,9 +244,9 @@ function animate() {
             animate();
 	});
     } else if (game.mode == "welcome") {
-	drawInfo(["Welcome to the CanCave"], ["Press <enter> to start", "Press <space> to gain height"]);
+	drawInfo(["Welcome to the CanCave"], ["Press space, click or touch to play"]);
     } else if (game.mode == "dead") {
-	drawInfo(["Cavestronaut died!"], ["Press <enter> to play again"]);
+	drawInfo(["Cavestronaut died!"], ["Press space, click or touch to play again"]);
     }
 }
 
@@ -287,17 +286,22 @@ function touchStart(event) {
     if (isTouch === null)
 	isTouch = true;
     if (isTouch === true)
-	mouseOrTouchStart();
+	handleGameEvent();
 }
 
 function mouseDown(event) {
     if (isTouch === null)
 	isTouch = false;
     if (isTouch === false)
-	mouseOrTouchStart();
+	handleGameEvent();
 }
 
-function mouseOrTouchStart() {
+function keyDown(event) {
+    if (event.keyCode == SPACE)
+	handleGameEvent();
+}
+
+function handleGameEvent() {
     if (game.mode == 'play')
 	game.ship.throtle = true;
     else if (game.mode == "welcome")
@@ -316,19 +320,6 @@ function touchEnd(event) {
 function mouseUp(event) {
     if (isTouch === false)
 	game.ship.throtle = false;
-}
-
-function keyDown(event) {
-    if (event.keyCode == SPACE)
-	game.ship.throtle = true;
-    if (event.keyCode == ENTER) {
-	if (game.mode == "welcome") {
-	    start();
-	} else if (game.mode == "dead") {
-	    game = initGame();
-	    start();
-	}
-    }
 }
 
 function keyUp(event) {
