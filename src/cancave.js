@@ -1,3 +1,4 @@
+
 window.requestAnimFrame = (function(callback) {
     return window.requestAnimationFrame
 	|| window.webkitRequestAnimationFrame
@@ -19,9 +20,12 @@ var now = new Date();
 var frameCount = 0;
 var fps = 0;
 
+var isTouch = null;
+
 var game = initGame();
 
 function initGame() {
+    isTouch = null;
     return {
 	title : "CanCave  -  https://github.com/torkjel/cancave  -  Feel free to fork!",
 	mode : "welcome",
@@ -279,7 +283,21 @@ window.onload=function() {
     animate();
 }
 
+function touchStart(event) {
+    if (isTouch === null)
+	isTouch = true;
+    if (isTouch === true)
+	mouseOrTouchStart();
+}
+
 function mouseDown(event) {
+    if (isTouch === null)
+	isTouch = false;
+    if (isTouch === false)
+	mouseOrTouchStart();
+}
+
+function mouseOrTouchStart() {
     if (game.mode == 'play')
 	game.ship.throtle = true;
     else if (game.mode == "welcome")
@@ -290,8 +308,14 @@ function mouseDown(event) {
     }
 }
 
+function touchEnd(event) {
+    if (isTouch === true)
+	game.ship.throtle = false;
+}
+
 function mouseUp(event) {
-    game.ship.throtle = false;
+    if (isTouch === false)
+	game.ship.throtle = false;
 }
 
 function keyDown(event) {
