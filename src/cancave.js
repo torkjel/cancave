@@ -279,6 +279,21 @@ window.onload=function() {
     animate();
 }
 
+function mouseDown(event) {
+    if (game.mode == 'play')
+	game.ship.throtle = true;
+    else if (game.mode == "welcome")
+	start();
+    else if (game.mode == "dead") {
+	game = initGame();
+	start();
+    }
+}
+
+function mouseUp(event) {
+    game.ship.throtle = false;
+}
+
 function keyDown(event) {
     if (event.keyCode == SPACE)
 	game.ship.throtle = true;
