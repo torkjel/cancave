@@ -1,6 +1,5 @@
-function check_html5_localstorage() {
-    if (!('localStorage' in window && window['localStorage'] !== null))
-	throw new Exception("Local storage not supported!");
+function has_html5_localstorage() {
+    return 'localStorage' in window && window['localStorage'] !== null;
 }
 
 function ScoreTable() {
@@ -25,20 +24,34 @@ ScoreTable.prototype.addScore = function(score) {
 }
 
 ScoreTable.prototype.save = function() {
-    check_html5_localstorage();
     var data = JSON.stringify(this);
-    window.localStorage.hiscore = data;
+    if (has_html5_localstorage())
+	window.localStorage.hiscore = data;
+    else
+	document.cookie = "hiscore=" + escape(data);
 }
 
 ScoreTable.prototype.load = function() {
-    check_html5_localstorage();
-    if ('hiscore' in window.localStorage) {
-	var data = window.localStorage.hiscore;
-	var persisted = JSON.parse(data);
+    var data = null;
+    if (has_html5_localstorage()) {
+	if ('hiscore' in window.localStorage)
+	    data = window.localStorage.hiscore;
+    } else {
+	var cookies = document.cookie.split(';');
+	for(var i = 0;  i < cookies.length; i++) {
+	    var c = cookies[i].trim();
+	    if (c.indexOf("hiscore=") == 0)
+		data = unescape(c.substring("hiscore=".length, c.length));
+	}
+    }
+
+    if (data !== null) {
+	console.log(data);
+	var jsonData = JSON.parse(data);
 	this.scores = [];
-	this.capacity = persisted.capacity;
-	for (var i = 0; i < persisted.scores.length; i++) {
-	    var score = persisted.scores[i];
+	this.capacity = jsonData.capacity;
+	for (var i = 0; i < jsonData.scores.length; i++) {
+	    var score = jsonData.scores[i];
 	    this.scores.push(new Score(score.name, score.date, score.score));
 	}
     }
