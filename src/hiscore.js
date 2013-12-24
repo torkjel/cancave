@@ -45,8 +45,7 @@ ScoreTable.prototype.load = function() {
 	}
     }
 
-    if (data !== null) {
-	console.log(data);
+    if (data) {
 	var jsonData = JSON.parse(data);
 	this.scores = [];
 	this.capacity = jsonData.capacity;
