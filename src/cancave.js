@@ -182,13 +182,6 @@ function drawTerrain(start, end, path) {
     context.fill();
 }
 
-function fillDigits(value, digits, fill) {
-    var str = "" + value;
-    while (str.length < digits)
-	str = fill + str;
-    return str;
-}
-
 function drawStatus() {
     context.fillStyle = 'rgba(64, 64, 64, 0.5)';
     context.fillRect(0, canvas.height - 20, canvas.width, 20);
@@ -196,7 +189,7 @@ function drawStatus() {
     context.font = "normal 10pt monospace";
     context.fillStyle="#FFFFFF";
     context.fillText(game.title, 20, 15);
-    context.fillText('Points: ' + fillDigits(game.points, 7, 0) + '  -  FPS: ' + fillDigits(fps), 20, canvas.height - 5);
+    context.fillText('Points: ' + padLeft(7, 0, game.points) + '  -  FPS: ' + padLeft(3, 0, fps), 20, canvas.height - 5);
 }
 
 function tick() {
@@ -242,7 +235,7 @@ function animate() {
     if (crashed()) {
 	game.mode = "dead";
 	var now = crashedDate = new Date();
-	hiscores.addScore(new Score("player", (1900 + now.getYear()) + "-" + (now.getMonth() + 1) + "-" + now.getDate(), game.points));
+	hiscores.addScore(new Score("player", (1900 + now.getYear()) + "-" + padLeft(2, 0, now.getMonth() + 1) + "-" + padLeft(2, 0, now.getDate()), game.points));
     }
 
     if (game.mode == "play") {
