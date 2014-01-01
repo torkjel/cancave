@@ -1,6 +1,3 @@
-function has_html5_localstorage() {
-    return 'localStorage' in window && window['localStorage'] !== null;
-}
 
 function ScoreTable() {
     this.scores = [];
@@ -25,7 +22,7 @@ ScoreTable.prototype.addScore = function(score) {
 
 ScoreTable.prototype.save = function() {
     var data = JSON.stringify(this);
-    if (has_html5_localstorage())
+    if (hs_utils.hasLocalstorage())
 	window.localStorage.hiscore = data;
     else
 	document.cookie = "hiscore=" + escape(data);
@@ -33,16 +30,11 @@ ScoreTable.prototype.save = function() {
 
 ScoreTable.prototype.load = function() {
     var data = null;
-    if (has_html5_localstorage()) {
+    if (hs_utils.hasLocalstorage()) {
 	if ('hiscore' in window.localStorage)
 	    data = window.localStorage.hiscore;
     } else {
-	var cookies = document.cookie.split(';');
-	for(var i = 0;  i < cookies.length; i++) {
-	    var c = cookies[i].trim();
-	    if (c.indexOf("hiscore=") == 0)
-		data = unescape(c.substring("hiscore=".length, c.length));
-	}
+	data = hs_utils.getCookie('hiscore');
     }
 
     if (data) {
@@ -61,3 +53,21 @@ function Score(name, date, score) {
     this.date = date;
     this.score = score;
 }
+
+var hs_utils = new function() {
+    this.getCookie = function(name) {
+	var nameEq = name + '=';
+	var data = null;
+	var cookies = document.cookie.split(';');
+	for(var i = 0;  i < cookies.length; i++) {
+	    var c = cookies[i].trim();
+	    if (c.indexOf(nameEq) == 0)
+		data = unescape(c.substring(nameEq.length, c.length));
+	}
+	return data;
+    }
+
+    this.hasLocalstorage = function() {
+	return 'localStorage' in window && window['localStorage'] !== null;
+    }
+};
