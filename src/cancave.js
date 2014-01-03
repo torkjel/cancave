@@ -24,6 +24,7 @@ var isTouch = null;
 var game = initGame();
 
 var hiscores = new ScoreTable();
+var sfx = new Sfx();
 var crashedDate = null;
 
 function initGame() {
@@ -214,6 +215,7 @@ function tick() {
 }
 
 function start() {
+    sfx.go();
     game.mode = "play";
     game.start_time = new Date().getTime();
     animate();
@@ -234,6 +236,7 @@ function animate() {
 
     if (crashed()) {
 	game.mode = "dead";
+	sfx.fail();
 	var now = crashedDate = new Date();
 	hiscores.addScore(new Score("player", (1900 + now.getYear()) + "-" + padLeft(2, 0, now.getMonth() + 1) + "-" + padLeft(2, 0, now.getDate()), game.points));
     }
